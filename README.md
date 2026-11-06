@@ -1,7 +1,7 @@
 # Sydrahynth
 
-Sydrahynth is a Linux plugin that emulates ASM's Hydrasynth Desktop. It runs ASM's own
-Hydrasynth Desktop firmware on an emulated main board. No firmware is included:
+Sydrahynth is a plugin for Linux and macOS that emulates ASM's Hydrasynth Desktop. It runs
+ASM's own Hydrasynth Desktop firmware on an emulated main board. No firmware is included:
 you supply `Hydrasynth_Desktop_Firmware_2.2.0.dat` from ASM's firmware pack.
 
 
@@ -17,9 +17,16 @@ https://github.com/user-attachments/assets/9b7ed8db-5732-41ab-bc41-2bdd0075680c
     cmake --build build
 
 This builds the tools and, with JUCE fetched, the plugin as VST3, LV2 and a
-standalone app in `build/Sydrahynth_artefacts/<config>/`. Install by
+standalone app in `build/Sydrahynth_artefacts/<config>/` (VST3, AU and standalone
+on macOS). Install on Linux by
 copying `VST3/Sydrahynth.vst3` to `~/.vst3/` and `LV2/Sydrahynth.lv2` to
-`~/.lv2/`.
+`~/.lv2/`; on macOS copy `VST3/Sydrahynth.vst3` to `~/Library/Audio/Plug-Ins/VST3/`
+and `AU/Sydrahynth.component` to `~/Library/Audio/Plug-Ins/Components/`.
+
+On macOS the build needs the Xcode toolchain and, via Homebrew, `cmake`, `ninja`
+and `boost` (headers only, for Dynarmic). On x86-64 the custom DSP cores are
+JIT-compiled; on arm64 (Apple Silicon) they run on the interpreter, which is
+slower — `emurun` measures about 1.9 x real time on an M-series chip.
 
 The default configuration is `RelWithDebInfo` (`-O2` with debug symbols, a
 standalone of over 200 MB). For everyday use, build `Release` (`-O3`, no
@@ -47,8 +54,10 @@ this project is not affiliated with or endorsed by ASM.
 ## Plugin
 
 - Firmware: choose the `.dat` file in the plugin window (stored in
-  `~/.config/sydrahynth/sydrahynth.settings`), or put it into
-  `~/.local/share/sydrahynth/`, or set `HYDRA_FIRMWARE`.
+  `~/.config/sydrahynth/sydrahynth.settings` on Linux,
+  `~/Library/Application Support/sydrahynth/sydrahynth.settings` on macOS), or
+  put it into `~/.local/share/sydrahynth/`
+  (`~/Library/Application Support/sydrahynth/` on macOS), or set `HYDRA_FIRMWARE`.
 - The emulator runs on its own threads, ahead of the host by the latency chosen
   in the editor (6, 12, 23 or 46 ms; default 12 ms, and always at least a host
   block plus about 3 ms); MIDI goes to the instrument's MIDI input, the output

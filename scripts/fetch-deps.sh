@@ -10,9 +10,11 @@ if [ ! -d external/dynarmic ]; then
     git -C external/dynarmic fetch -q --depth 1 origin "$DYNARMIC_COMMIT"
     git -C external/dynarmic checkout -q FETCH_HEAD
     git -C external/dynarmic submodule update -q --init --depth 1 \
-        externals/fmt externals/mcl externals/robin-map externals/xbyak externals/zycore externals/zydis
+        externals/fmt externals/mcl externals/oaknut externals/robin-map externals/xbyak externals/zycore externals/zydis
     git -C external/dynarmic/externals/zydis submodule update -q --init --depth 1
-    git -C external/dynarmic apply "$PWD/patches/dynarmic-system-instructions.patch"
+    for patch in "$PWD"/patches/dynarmic-*.patch; do
+        git -C external/dynarmic apply "$patch"
+    done
 fi
 
 # JUCE for the plugin (VST3, LV2, standalone). Free use of JUCE 8 is under AGPLv3.

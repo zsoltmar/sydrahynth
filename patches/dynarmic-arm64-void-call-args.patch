@@ -1,0 +1,13 @@
+diff --git a/src/dynarmic/backend/arm64/reg_alloc.cpp b/src/dynarmic/backend/arm64/reg_alloc.cpp
+index 90befad..4bd5c5e 100644
+--- a/src/dynarmic/backend/arm64/reg_alloc.cpp
++++ b/src/dynarmic/backend/arm64/reg_alloc.cpp
+@@ -170,7 +170,7 @@ void RegAlloc::PrepareForCall(std::optional<Argument::copyable_reference> arg0,
+     int nsrn = 0;
+ 
+     for (int i = 0; i < 4; i++) {
+-        if (args[i]) {
++        if (args[i] && !args[i]->get().IsVoid()) {
+             if (args[i]->get().GetType() == IR::Type::U128) {
+                 ASSERT(fprs[nsrn].IsCompletelyEmpty());
+                 LoadCopyInto(args[i]->get().value, oaknut::QReg{nsrn});

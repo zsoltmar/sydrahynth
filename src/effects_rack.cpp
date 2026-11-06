@@ -4,6 +4,8 @@
 
 #if defined(__x86_64__) || defined(__i386__)
 #include <immintrin.h>
+#elif defined(__aarch64__)
+#include <arm_acle.h>
 #endif
 
 #include "threads.h"
@@ -18,6 +20,8 @@ void waitUntil(Done done) {
         if (spins < 4096) {
 #if defined(__x86_64__) || defined(__i386__)
             _mm_pause();
+#elif defined(__aarch64__)
+            __yield();
 #endif
         } else {
             std::this_thread::yield();

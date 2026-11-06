@@ -9,6 +9,9 @@
 
 #include <pthread.h>
 #include <sched.h>
+#elif defined(__APPLE__)
+#include <pthread.h>
+#include <pthread/qos.h>
 #endif
 
 namespace hydra {
@@ -53,6 +56,13 @@ void initEmulatorThread(const char* name) {
             CPU_SET(cpu, &fast);
     if (CPU_COUNT(&fast) < CPU_COUNT(&allowed))
         pthread_setaffinity_np(pthread_self(), sizeof fast, &fast);
+#elif defined(__APPLE__)
+    pthread_setname_np(name);
+    // USER_INTERACTIVE keeps the thread on performance cores: as with the
+    // Linux affinity above, a worker on an efficiency core holds up the DSP
+    // side, which syncs every sample.
+    if (!std::getenv("HYDRA_ALL_CORES"))
+        pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
 #else
     (void)name;
 #endif

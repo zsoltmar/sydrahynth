@@ -2,12 +2,28 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 
 #if defined(__x86_64__) || defined(__i386__)
 #include <immintrin.h>
+#elif defined(__aarch64__)
+#include <arm_acle.h>
 #endif
 
 namespace hydra {
+
+// A cheap monotonically increasing counter for profiling and measurements.
+inline std::uint64_t hostCycles() {
+#if defined(__x86_64__) || defined(__i386__)
+    return __rdtsc();
+#elif defined(__aarch64__)
+    std::uint64_t count;
+    __asm__ volatile("mrs %0, cntvct_el0" : "=r"(count));
+    return count;
+#else
+    return 0;
+#endif
+}
 
 // Sets up the calling thread as one of the emulator's: names it (shown by
 // top -H and ps -L) and keeps it off cores with less than half the capacity
@@ -36,6 +52,9 @@ T spinThenWait(const std::atomic<T>& atomic, Ready ready, std::chrono::nanosecon
 #if defined(__x86_64__) || defined(__i386__)
         else
             _mm_pause();
+#elif defined(__aarch64__)
+        else
+            __yield();
 #endif
     }
 }

@@ -6,6 +6,8 @@
 
 #if defined(__x86_64__) || defined(__i386__)
 #include <immintrin.h>
+#elif defined(__aarch64__)
+#include <arm_acle.h>
 #endif
 
 #include "threads.h"
@@ -38,6 +40,8 @@ constexpr std::chrono::nanoseconds kMaxSpin = std::chrono::microseconds(30), kMi
 void pause() {
 #if defined(__x86_64__) || defined(__i386__)
     _mm_pause();
+#elif defined(__aarch64__)
+    __yield();
 #endif
 }
 

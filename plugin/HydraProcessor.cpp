@@ -11,7 +11,11 @@ constexpr int kStateVersion = 1;
 juce::PropertiesFile::Options settingsOptions() {
     juce::PropertiesFile::Options options;
     options.applicationName = "sydrahynth";
+#if JUCE_MAC
+    options.folderName = "sydrahynth";  // under osxLibrarySubFolder
+#else
     options.folderName = ".config/sydrahynth";  // on Linux relative to the home directory
+#endif
     options.filenameSuffix = "settings";
     options.osxLibrarySubFolder = "Application Support";
     return options;
@@ -59,8 +63,13 @@ juce::File HydraProcessor::firmwareFile() const {
         return juce::File(stored);
     if (const char* fromEnvironment = std::getenv("HYDRA_FIRMWARE"))
         return juce::File(juce::String(fromEnvironment));
+#if JUCE_MAC
+    const juce::File folder =
+        juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory).getChildFile("sydrahynth");
+#else
     const juce::File folder =
         juce::File::getSpecialLocation(juce::File::userHomeDirectory).getChildFile(".local/share/sydrahynth");
+#endif
     const auto found = folder.findChildFiles(juce::File::findFiles, false, "*.dat");
     return found.isEmpty() ? juce::File() : found.getFirst();
 }

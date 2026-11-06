@@ -89,8 +89,9 @@ public:
     // accounted for. An idle loop (a backward branch that changes nothing)
     // consumes the rest of the budget at once.
     std::uint64_t run(std::uint64_t instructions);
-    // Compiles the program to x86-64 (see dsp_jit.h) instead of interpreting it;
-    // the default for new cores comes from HYDRA_DSP_JIT (1 unless set to 0).
+    // Compiles the program to x86-64 (see dsp_jit.h) instead of interpreting it,
+    // on x86-64 hosts; other hosts always interpret. The default for new cores
+    // comes from HYDRA_DSP_JIT (1 unless set to 0).
     void setJit(bool enabled);
     static bool jitByDefault();
     void raiseInterrupt(int line) { pending_ |= 1u << line; }
@@ -154,7 +155,9 @@ private:
     std::uint64_t idleWrites_ = ~0ull;
     std::array<std::uint32_t, 16> idleRegs_{};
 
+#if defined(__x86_64__)
     std::unique_ptr<DspJit> jit_;
+#endif
 };
 
 }  // namespace hydra::dsp

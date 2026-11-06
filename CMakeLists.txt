@@ -16,6 +16,9 @@ set(DYNARMIC_TESTS OFF CACHE BOOL "" FORCE)
 set(DYNARMIC_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
 set(DYNARMIC_USE_BUNDLED_EXTERNALS ON CACHE BOOL "" FORCE)
 add_subdirectory(external/dynarmic EXCLUDE_FROM_ALL)
+# Dynarmic's public headers include <boost/variant.hpp>; found here too so the
+# imported target exists at this scope (find_package targets are directory-scoped).
+find_package(Boost 1.57 REQUIRED)
 
 add_library(hydra_core STATIC
     src/a5_peripherals.cpp
@@ -27,7 +30,6 @@ add_library(hydra_core STATIC
     src/cpu.cpp
     src/dsp_block.cpp
     src/dsp_core.cpp
-    src/dsp_jit.cpp
     src/effects_rack.cpp
     src/emulator.cpp
     src/fx_dsp.cpp
@@ -46,9 +48,14 @@ add_library(hydra_core STATIC
     src/wave_rom.cpp
 )
 target_include_directories(hydra_core PUBLIC src)
-target_link_libraries(hydra_core PUBLIC dynarmic merry::mcl PRIVATE xbyak::xbyak)
-# Same Xbyak configuration as Dynarmic: its inline functions are shared (ODR).
-target_compile_definitions(hydra_core PRIVATE XBYAK_STRICT_CHECK_MEM_REG_SIZE=0)
+target_link_libraries(hydra_core PUBLIC dynarmic merry::mcl Boost::headers)
+# The DSP JIT emits x86-64 through Xbyak; other hosts run the interpreter.
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+    target_sources(hydra_core PRIVATE src/dsp_jit.cpp)
+    target_link_libraries(hydra_core PRIVATE xbyak::xbyak)
+    # Same Xbyak configuration as Dynarmic: its inline functions are shared (ODR).
+    target_compile_definitions(hydra_core PRIVATE XBYAK_STRICT_CHECK_MEM_REG_SIZE=0)
+endif()
 target_compile_options(hydra_core PRIVATE -Wall -Wextra)
 
 add_executable(hydraboot tools/hydraboot.cpp)
@@ -77,12 +84,18 @@ target_compile_options(emurun PRIVATE -Wall -Wextra)
 option(HYDRA_BUILD_PLUGIN "Build the VST3/LV2/standalone plugin" ON)
 if (HYDRA_BUILD_PLUGIN AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/JUCE/CMakeLists.txt)
     add_subdirectory(external/JUCE EXCLUDE_FROM_ALL)
+    # LV2 is the Linux format; on macOS the native format is AU.
+    if (APPLE)
+        set(HYDRA_PLUGIN_FORMATS VST3 AU Standalone)
+    else()
+        set(HYDRA_PLUGIN_FORMATS VST3 LV2 Standalone)
+    endif()
     juce_add_plugin(Sydrahynth
         PRODUCT_NAME "Sydrahynth"
         COMPANY_NAME "sydrahynth"
         PLUGIN_MANUFACTURER_CODE Sydr
         PLUGIN_CODE Sdhy
-        FORMATS VST3 LV2 Standalone
+        FORMATS ${HYDRA_PLUGIN_FORMATS}
         IS_SYNTH TRUE
         NEEDS_MIDI_INPUT TRUE
         NEEDS_MIDI_OUTPUT FALSE
