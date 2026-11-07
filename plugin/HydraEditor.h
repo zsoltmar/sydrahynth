@@ -6,6 +6,7 @@
 
 #include "PanelView.h"
 #include "PatchBrowser.h"
+#include "Theme.h"
 
 class HydraProcessor;
 
@@ -36,7 +37,7 @@ public:
     void resized() override;
 
 private:
-    static constexpr int kBarHeight = 36, kBrowserWidth = 270;
+    static constexpr int kBarHeight = 48, kBrowserWidth = 280;
 
     void timerCallback() override;
     void chooseFirmware();
@@ -45,8 +46,9 @@ private:
     void updateResizeLimits();
 
     HydraProcessor& processor_;
+    theme::LookAndFeel lnf_;
     juce::Label title_, firmware_, status_;
-    juce::TextButton chooseFirmware_{"Firmware..."}, togglePatches_{"Patches"};
+    juce::TextButton chooseFirmware_{"FIRMWARE..."}, togglePatches_{"PATCHES"};
     juce::ComboBox latency_;
     std::unique_ptr<juce::FileChooser> chooser_;
     PatchBrowser browser_;

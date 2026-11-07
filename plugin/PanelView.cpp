@@ -2,10 +2,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <tuple>
 
 #include "HydraProcessor.h"
+#include "LogoData.h"
+#include "Theme.h"
 
 namespace {
 using Input = hydra::Emulator::PanelInput;
@@ -23,31 +26,32 @@ struct Button {
 };
 const Button kButtons[] = {
     // Arpeggiator
-    {"ON", 26, 30, 385, 412}, {"LATCH", 28, 31, 532, 412}, {"TRIPLET", 46, 32, 680, 412}, {"TAP TEMPO", 48, 29, 827, 412},
+    {"ON", 26, 30, 337, 334, 100, 39}, {"LATCH", 28, 31, 484, 334, 100, 39},
+    {"TRIPLET", 46, 32, 634, 334, 100, 39}, {"TAP TEMPO", 48, 29, 783, 334, 100, 39},
     // Knob assignment for cutoff and resonance
-    {"FILTER 1", 79, 26, 802, 562}, {"FILTER 2", 80, 27, 802, 630},
+    {"FILTER 1", 79, 26, 805, 485, 76, 39}, {"FILTER 2", 80, 27, 805, 537, 76, 39},
     // Patch and system
-    {"BROWSE", 45, 34, 955, 124, 76}, {"SAVE", 50, 33, 955, 238, 76}, {"SYSTEM", 27, 38, 955, 314, 76},
-    {"INIT", 44, 35, 955, 418, 76}, {"RANDOM", 59, 36, 955, 488, 76}, {"SHIFT", 62, 39, 955, 598, 76},
+    {"BROWSE", 45, 34, 963, 129, 76, 39}, {"SAVE", 50, 33, 963, 214, 76, 39}, {"SYSTEM", 27, 38, 963, 288, 76, 39},
+    {"INIT", 44, 35, 963, 353, 76, 39}, {"RANDOM", 59, 36, 963, 428, 76, 39}, {"SHIFT", 62, 39, 963, 522, 76, 39},
     // Navigation
-    {"<", 51, -1, 1065, 488, 62}, {">", 55, -1, 1175, 488, 62}, {"HOME", 49, -1, 1120, 598, 170, 40},
-    {"EXIT", 7, 45, 1870, 124, 76}, {"VOICE", 56, 46, 1870, 234, 76}, {"UP", 60, 47, 1870, 316, 76},
-    {"DOWN", 61, 48, 1870, 378, 76}, {"MACRO ASSIGN", 57, 49, 1870, 486, 76}, {"MOD MATRIX", 58, 58, 1870, 596, 76},
+    {"<", 51, -1, 1060, 429, 62, 39}, {">", 55, -1, 1170, 429, 62, 39}, {"HOME", 49, -1, 1114, 522, 171, 39},
+    {"EXIT", 7, 45, 1858, 124, 100, 39}, {"VOICE", 56, 46, 1858, 213, 100, 39}, {"UP", 60, 47, 1858, 290, 100, 39},
+    {"DOWN", 61, 48, 1858, 355, 100, 39}, {"MACRO ASSIGN", 57, 49, 1858, 427, 100, 39}, {"MOD MATRIX", 58, 58, 1858, 517, 100, 39},
     // Encoder push buttons
-    {"", 33, 50, 1315, 235, 62, 30}, {"", 34, 51, 1455, 235, 62, 30}, {"", 35, 52, 1597, 235, 62, 30},
-    {"", 36, 53, 1737, 235, 62, 30}, {"", 37, 54, 1315, 488, 62, 30}, {"", 38, 55, 1455, 488, 62, 30},
-    {"", 39, 56, 1597, 488, 62, 30}, {"", 40, 57, 1737, 488, 62, 30},
+    {"", 33, 50, 1356, 217, 66, 32}, {"", 34, 51, 1474, 217, 66, 32}, {"", 35, 52, 1594, 217, 66, 32},
+    {"", 36, 53, 1711, 217, 66, 32}, {"", 37, 54, 1355, 431, 66, 32}, {"", 38, 55, 1475, 431, 66, 32},
+    {"", 39, 56, 1594, 431, 66, 32}, {"", 40, 57, 1712, 431, 66, 32},
     // Module buttons
-    {"OSC 1", 11, 0, 125, 770}, {"MUTANT 1", 14, 3, 230, 770, 78}, {"MUTANT 2", 15, 4, 332, 770, 78},
-    {"OSC 2", 12, 1, 125, 838}, {"MUTANT 3", 16, 5, 230, 838, 78}, {"MUTANT 4", 3, 6, 332, 838, 78},
-    {"OSC 3", 13, 2, 125, 908}, {"RING-NOISE", 17, 7, 332, 908, 78},
-    {"MIXER", 0, 8, 437, 838}, {"FILTER 1", 24, 19, 540, 805}, {"FILTER 2", 25, 20, 540, 872},
-    {"AMP", 1, 21, 644, 838}, {"PRE-FX", 2, 22, 746, 838}, {"DELAY", 4, 23, 851, 805},
-    {"REVERB", 5, 24, 851, 872}, {"POST-FX", 6, 25, 953, 838},
-    {"ENV 1", 70, 9, 540, 728}, {"ENV 2", 71, 10, 644, 728}, {"ENV 3", 72, 11, 748, 728},
-    {"ENV 4", 73, 12, 850, 728}, {"ENV 5", 18, 13, 955, 728},
-    {"LFO 1", 66, 14, 540, 948}, {"LFO 2", 67, 15, 644, 948}, {"LFO 3", 68, 16, 748, 948},
-    {"LFO 4", 69, 17, 850, 948}, {"LFO 5", 47, 18, 955, 948},
+    {"OSC 1", 11, 0, 86, 725, 71, 39}, {"MUTANT 1", 14, 3, 191, 725, 93, 39}, {"MUTANT 2", 15, 4, 303, 725, 93, 39},
+    {"OSC 2", 12, 1, 86, 796, 71, 39}, {"MUTANT 3", 16, 5, 191, 796, 93, 39}, {"MUTANT 4", 3, 6, 303, 796, 93, 39},
+    {"OSC 3", 13, 2, 86, 869, 71, 39}, {"RING-NOISE", 17, 7, 295, 869, 109, 39},
+    {"MIXER", 0, 8, 401, 796, 71, 39}, {"FILTER 1", 24, 19, 506, 762, 76, 39}, {"FILTER 2", 25, 20, 506, 832, 76, 39},
+    {"AMP", 1, 21, 610, 796, 71, 39}, {"PRE-FX", 2, 22, 713, 796, 83, 39}, {"DELAY", 4, 23, 819, 762, 76, 39},
+    {"REVERB", 5, 24, 819, 832, 76, 39}, {"POST-FX", 6, 25, 934, 796, 93, 39},
+    {"ENV 1", 70, 9, 506, 681, 71, 39}, {"ENV 2", 71, 10, 610, 681, 71, 39}, {"ENV 3", 72, 11, 714, 681, 71, 39},
+    {"ENV 4", 73, 12, 819, 681, 71, 39}, {"ENV 5", 18, 13, 923, 681, 71, 39},
+    {"LFO 1", 66, 14, 506, 912, 71, 39}, {"LFO 2", 67, 15, 610, 912, 71, 39}, {"LFO 3", 68, 16, 714, 912, 71, 39},
+    {"LFO 4", 69, 17, 819, 912, 71, 39}, {"LFO 5", 47, 18, 923, 912, 71, 39},
 };
 
 // Secondary functions printed in orange under some buttons (used with SHIFT).
@@ -65,14 +69,18 @@ const char* const kPadLegends[3][8] = {
     {"OCT -", "OCT +", "PAD MODE -", "PAD MODE +", "KEY", "", "", ""},
 };
 
-// Section headings, as on the hardware.
-struct Heading {
-    const char* text;
-    float x, y, w;  // centre x, top, width
+// The section cards (with their headings on the top edge, as in the design).
+struct Card {
+    const char* heading;  // nullptr: no heading
+    float x, y, w, h;
 };
-const Heading kHeadings[] = {
-    {"ARPEGGIATOR", 606, 200, 560}, {"FILTER CONTROLS", 611, 490, 470}, {"MODULE SELECT", 230, 678, 300},
-    {"MAIN SYSTEMS", 1065, 30, 300}, {"MASTER CONTROL", 1590, 30, 600},
+const Card kCards[] = {
+    {nullptr, 34, 169, 156, 419},          // master volume
+    {"ARPEGGIATOR", 219, 169, 654, 234},   //
+    {"FILTER CONTROLS", 219, 436, 654, 154},
+    {"MODULE SELECT", 35, 624, 966, 351},
+    {"MAIN SYSTEMS", 904, 55, 326, 535},
+    {"MASTER CONTROL", 1262, 55, 672, 536},
 };
 
 // Knobs: master volume (the plugin's output gain), the arpeggiator switches and
@@ -84,25 +92,29 @@ struct Knob {
     float x, y, radius;
 };
 const Knob kKnobs[] = {
-    {Knob::Kind::Volume, "MASTER VOLUME", 0, 175, 405, 38},
-    {Knob::Kind::Arp, "MODE", hydra::FrontPanel::kArpMode, 385, 300, 27},
-    {Knob::Kind::Arp, "OCTAVE", hydra::FrontPanel::kArpOctave, 532, 300, 27},
-    {Knob::Kind::Arp, "DIVISION", hydra::FrontPanel::kArpDivision, 680, 300, 27},
-    {Knob::Kind::Arp, "SWING", hydra::FrontPanel::kArpSwing, 827, 300, 27},
-    {Knob::Kind::Analog, "CUTOFF", hydra::FrontPanel::kCutoff, 422, 600, 34},
-    {Knob::Kind::Analog, "RESONANCE", hydra::FrontPanel::kResonance, 547, 600, 34},
-    {Knob::Kind::Analog, "DRIVE / MORPH", hydra::FrontPanel::kDriveMorph, 673, 600, 34},
+    {Knob::Kind::Volume, "MASTER VOLUME", 0, 111, 377, 42},
+    {Knob::Kind::Arp, "MODE", hydra::FrontPanel::kArpMode, 336, 244, 34},
+    {Knob::Kind::Arp, "OCTAVE", hydra::FrontPanel::kArpOctave, 484, 244, 34},
+    {Knob::Kind::Arp, "DIVISION", hydra::FrontPanel::kArpDivision, 634, 244, 34},
+    {Knob::Kind::Arp, "SWING", hydra::FrontPanel::kArpSwing, 781, 244, 34},
+    {Knob::Kind::Analog, "CUTOFF", hydra::FrontPanel::kCutoff, 330, 506, 38},
+    {Knob::Kind::Analog, "RESONANCE", hydra::FrontPanel::kResonance, 489, 506, 38},
+    {Knob::Kind::Analog, "DRIVE / MORPH", hydra::FrontPanel::kDriveMorph, 653, 506, 38},
 };
 
-constexpr float kEncoderX[4] = {1315, 1455, 1597, 1737}, kEncoderY[2] = {122, 597}, kEncoderRadius = 23;
-constexpr float kDataX = 1120, kDataY = 155, kDataRadius = 76;
+constexpr float kEncoderX[4] = {1356, 1474, 1594, 1711}, kEncoderY[2] = {136, 520}, kEncoderRadius = 26;
+constexpr float kDataX = 1114, kDataY = 166, kDataRadius = 72;
 
-// Displays: main, then the four above the encoders (top-left corner and size).
+// Displays: the main one, then the four small ones (top-left corner and size);
+// the small ones sit in one continuous black screen.
 const juce::Rectangle<float> kDisplays[] = {
-    {1030, 318, 180, 90}, {1247, 325, 135, 68}, {1388, 325, 135, 68}, {1529, 325, 135, 68}, {1670, 325, 135, 68}};
+    {1020, 270, 190, 105}, {1284, 292, 120, 60}, {1410, 292, 120, 60}, {1536, 292, 120, 60}, {1662, 292, 120, 60}};
 
-constexpr float kPadW = 82, kPadH = 62, kPadX = 1056, kPadPitch = 108.2f;
-constexpr float kPadY[3] = {921, 828, 733};  // row centres, bottom row first
+// The screen behind the small displays (they share one black area).
+constexpr float kSmallDisplayX = 1284, kSmallDisplayY = 270, kSmallDisplayW = 498, kSmallDisplayH = 105;
+
+constexpr float kPadW = 83, kPadH = 64, kPadX = 1064.4f, kPadPitch = 108.4f;
+constexpr float kPadY[3] = {885, 786, 687};  // row centres, bottom row first
 juce::Rectangle<float> padBounds(int row, int column) {
     return {kPadX + kPadPitch * static_cast<float>(column), kPadY[row] - kPadH / 2, kPadW, kPadH};
 }
@@ -110,18 +122,36 @@ juce::Rectangle<float> padBounds(int row, int column) {
 juce::Rectangle<float> buttonBounds(const Button& b) { return {b.x - b.w / 2, b.y - b.h / 2, b.w, b.h}; }
 juce::Point<float> encoderCentre(int e) { return {kEncoderX[e & 3], kEncoderY[e >> 2]}; }
 
-const juce::Colour kBackground(0xff1b1d21), kPanel(0xff26292e), kLabel(0xffb8bcc4), kLed(0xffffd27a), kOrange(0xffe0702a);
 
-// The WS2812 LEDs run dim: show the hue at full brightness, faded by the level.
-juce::Colour ledColour(std::uint32_t rgb, juce::Colour off) {
-    const int r8 = static_cast<int>(rgb >> 16 & 0xFF), g8 = static_cast<int>(rgb >> 8 & 0xFF), b8 = static_cast<int>(rgb & 0xFF);
-    const int peak = std::max({r8, g8, b8});
-    if (peak == 0)
-        return off;
-    const float scale = 255.0f / static_cast<float>(peak);
-    const juce::Colour light(static_cast<std::uint8_t>(static_cast<float>(r8) * scale), static_cast<std::uint8_t>(static_cast<float>(g8) * scale),
-                             static_cast<std::uint8_t>(static_cast<float>(b8) * scale));
-    return off.interpolatedWith(light, 0.35f + 0.6f * std::sqrt(static_cast<float>(peak) / 255.0f));
+// The logo's path data (M, L, C, Z only), mapped from the design's coordinate
+// space onto the canvas.
+const juce::Path& logoPath() {
+    static const juce::Path path = [] {
+        juce::Path p;
+        const char* s = kLogoPathData;
+        const auto number = [&s] {
+            while (*s == ' ')
+                ++s;
+            char* end = nullptr;
+            const float v = std::strtof(s, &end);
+            s = end;
+            return v;
+        };
+        while (*s != '\0') {
+            const char command = *s++;
+            if (command == 'M')
+                p.startNewSubPath(number(), number());
+            else if (command == 'L')
+                p.lineTo(number(), number());
+            else if (command == 'C')
+                p.cubicTo(number(), number(), number(), number(), number(), number());
+            else if (command == 'Z')
+                p.closeSubPath();
+        }
+        p.applyTransform(juce::AffineTransform(0.554f, 0.0f, 33.4f, 0.0f, 0.554f, 37.4f));
+        return p;
+    }();
+    return path;
 }
 }  // namespace
 
@@ -188,14 +218,14 @@ void PanelView::timerCallback() {
         if (!first && std::lround(lights_->buttons[i] * 32) == std::lround(shown_->buttons[i] * 32))
             continue;
         shown_->buttons[i] = lights_->buttons[i];
-        mark(buttonBounds(b));
+        mark(buttonBounds(b).translated(0, 4));  // include the drop shadow
     }
     for (int e = 0; e < hydra::FrontPanel::kEncoders; ++e) {
         const auto i = static_cast<std::size_t>(e);
         if (!first && lights_->rings[i] == shown_->rings[i])
             continue;
         shown_->rings[i] = lights_->rings[i];
-        const float reach = kEncoderRadius + 14;
+        const float reach = kEncoderRadius + 18;  // knob shadow + ring dots
         mark(juce::Rectangle<float>(2 * reach, 2 * reach).withCentre(encoderCentre(e)));
     }
     for (int row = 0; row < hydra::FrontPanel::kPadRows; ++row)
@@ -204,11 +234,11 @@ void PanelView::timerCallback() {
             if (!first && lights_->pads[i] == shown_->pads[i])
                 continue;
             shown_->pads[i] = lights_->pads[i];
-            mark(padBounds(row, column));
+            mark(padBounds(row, column).expanded(12, 14));  // the pad's shadow and halo
         }
     if (first || lights_->patchRing != shown_->patchRing) {
         shown_->patchRing = lights_->patchRing;
-        const float reach = kDataRadius + 22;
+        const float reach = kDataRadius + 42;  // knob + ring glow
         mark(juce::Rectangle<float>(2 * reach, 2 * reach).withCentre({kDataX, kDataY}));
     }
     if (first)
@@ -222,14 +252,21 @@ juce::Point<float> PanelView::toCanvas(juce::Point<float> p) const {
 }
 
 void PanelView::paint(juce::Graphics& g) {
-    g.fillAll(kBackground);
+    g.fillAll(theme::kBackground);
     g.addTransform(juce::AffineTransform::scale(static_cast<float>(getWidth()) / kCanvasWidth,
                                                 static_cast<float>(getHeight()) / kCanvasHeight));
-    g.setColour(kPanel);
-    g.fillRoundedRectangle(20, 20, kCanvasWidth - 40, kCanvasHeight - 40, 16);
-    g.setColour(kLabel);
-    g.setFont(juce::FontOptions(40.0f, juce::Font::bold));
-    g.drawText("SYDRAHYNTH", juce::Rectangle<float>(70, 70, 420, 60), juce::Justification::centredLeft);
+    // The logo in the top left corner: the supplied artwork drawn with the
+    // design's own treatment — a black ghost fill, a faint white outline, and
+    // a black outline offset 1px up so the dark line sits above the light.
+    {
+        const juce::Path& logo = logoPath();
+        g.setColour(juce::Colours::black.withAlpha(0.15f));
+        g.fillPath(logo);
+        g.setColour(juce::Colours::white.withAlpha(0.09f));
+        g.strokePath(logo, juce::PathStrokeType(1.0f), juce::AffineTransform::translation(1.0f, 1.0f));
+        g.setColour(juce::Colours::black.withAlpha(0.9f));
+        g.strokePath(logo, juce::PathStrokeType(1.0f), juce::AffineTransform::translation(0.0f, -1.0f));
+    }
     paintHeadings(g);
     paintModuleLines(g);
     paintDisplays(g);
@@ -238,19 +275,26 @@ void PanelView::paint(juce::Graphics& g) {
     paintEncoders(g);
     paintPads(g);
     if (!live_) {
-        g.setColour(kLabel);
-        g.setFont(juce::FontOptions(28.0f));
+        g.setColour(theme::kTextDim);
+        g.setFont(theme::font(26.0f));
         g.drawText("waiting for the emulator...", kDisplays[0].expanded(200, 0).translated(0, 100),
                    juce::Justification::centred);
     }
 }
 
 void PanelView::paintDisplays(juce::Graphics& g) {
-    g.setImageResamplingQuality(juce::Graphics::lowResamplingQuality);
+    const juce::Graphics::ScopedSaveState save(g);
+    // The screens' black glass, behind the OLEDs.
+    g.setColour(juce::Colours::black);
+    g.fillRoundedRectangle(kDisplays[0], 8.0f);
+    g.fillRoundedRectangle({kSmallDisplayX, kSmallDisplayY, kSmallDisplayW, kSmallDisplayH}, 8.0f);
+    g.setImageResamplingQuality(juce::Graphics::mediumResamplingQuality);
     for (int d = 0; d < hydra::PanelDisplays::kCount; ++d) {
-        const juce::Rectangle<float> r = kDisplays[d];
-        g.setColour(juce::Colours::black);
-        g.fillRect(r.expanded(4));
+        juce::Rectangle<float> r = kDisplays[d];
+        if (d == 0)
+            r = r.withTrimmedTop(5).withTrimmedBottom(5).withTrimmedLeft(4).withTrimmedRight(4);
+        else
+            r = r.reduced(3, 2);
         g.setOpacity(1.0f);
         g.drawImage(displays_[static_cast<std::size_t>(d)], r, juce::RectanglePlacement::stretchToFit);
     }
@@ -261,37 +305,34 @@ void PanelView::paintButtons(juce::Graphics& g) {
         const juce::Rectangle<float> r = buttonBounds(b);
         const bool held = (active_.kind == Target::Kind::Button && &kButtons[active_.index] == &b) ||
                           (b.id == kShiftButton && (shiftLatched_ || shiftForGesture_ || shiftKeyHeld_));
-        g.setColour(held ? juce::Colour(0xff4a4f58) : juce::Colour(0xff3a3e45));
-        g.fillRoundedRectangle(r, 5);
-        if (b.led >= 0) {
-            const float level = lights_->buttons[static_cast<std::size_t>(b.led)];
-            if (level > 0.01f) {
-                g.setColour(kLed.withAlpha(0.25f + 0.75f * level));
-                g.fillRoundedRectangle(r.reduced(3).removeFromBottom(5), 2);
-            }
+        theme::paintButtonFace(g, r, held, r.getHeight() > 34.0f ? 6.0f : 9.0f);
+        const float level = b.led >= 0 ? lights_->buttons[static_cast<std::size_t>(b.led)] : 0.0f;
+        theme::paintLedBar(g, r, level);
+        if (*b.label) {
+            const auto text = r.reduced(4, 2).toNearestInt().withTrimmedBottom(6);
+            g.setFont(theme::font(b.h > 34.0f ? 13.0f : 12.0f, 0.9f));
+            g.setColour(theme::kText);
+            g.drawFittedText(b.label, text, juce::Justification::centred, 1);
         }
-        g.setColour(kLabel);
-        g.setFont(juce::FontOptions(b.w < 72 && std::strlen(b.label) > 7 ? 10.0f : 12.0f));
-        g.drawFittedText(b.label, r.reduced(3, 2).toNearestInt().withTrimmedBottom(5), juce::Justification::centred, 2);
         for (const Legend& legend : kShiftLegends)
             if (legend.id == b.id) {
-                g.setColour(kOrange);
-                g.setFont(juce::FontOptions(11.0f, juce::Font::bold));
-                g.drawText(legend.text, juce::Rectangle<float>(r.getX() - 20, r.getBottom() + 3, r.getWidth() + 40, 14),
+                g.setColour(theme::kAccentDim);
+                g.setFont(theme::font(12.0f));
+                g.drawText(legend.text, juce::Rectangle<float>(r.getX() - 20, r.getBottom() + 4, r.getWidth() + 40, 15),
                            juce::Justification::centred);
             }
         // The Control buttons' numbers: under the upper row, above the lower one.
         if (b.id >= 33 && b.id <= 40) {
             const int number = b.id - 32;
-            const float y = number <= 4 ? r.getBottom() + 3 : r.getY() - 17;
-            g.setColour(kLabel);
-            g.setFont(juce::FontOptions(12.0f));
-            g.drawText(juce::String(number), juce::Rectangle<float>(r.getX(), y, r.getWidth(), 14), juce::Justification::centred);
+            const float y = number <= 4 ? r.getBottom() + 5 : r.getY() - 20;
+            g.setColour(theme::kTextDim);
+            g.setFont(theme::font(13.0f));
+            g.drawText(juce::String(number), juce::Rectangle<float>(r.getX(), y, r.getWidth(), 15), juce::Justification::centred);
         }
         if (b.id == 61) {  // DOWN: the pair is labelled PAGE
-            g.setColour(kLabel);
-            g.setFont(juce::FontOptions(12.0f, juce::Font::bold));
-            g.drawText("PAGE", juce::Rectangle<float>(r.getX() - 10, r.getBottom() + 4, r.getWidth() + 20, 14), juce::Justification::centred);
+            g.setColour(theme::kTextDim);
+            g.setFont(theme::font(13.0f));
+            g.drawText("PAGE", juce::Rectangle<float>(r.getX() - 10, r.getBottom() + 5, r.getWidth() + 20, 15), juce::Justification::centred);
         }
     }
 }
@@ -300,27 +341,27 @@ void PanelView::paintButtons(juce::Graphics& g) {
 void PanelView::paintModuleLines(juce::Graphics& g) {
     const auto box = [](int id) {
         for (const Button& b : kButtons)
-            if (b.id == id && (b.y > 700))  // the module buttons (FILTER 1/2 also exist in the filter section)
+            if (b.id == id && (b.y > 640))  // the module buttons (FILTER 1/2 also exist in the filter section)
                 return buttonBounds(b);
         return juce::Rectangle<float>();
     };
     enum : int { kOsc1 = 11, kOsc2 = 12, kOsc3 = 13, kMut1 = 14, kMut2 = 15, kMut3 = 16, kMut4 = 3, kRing = 17, kMixer = 0,
                  kFilter1 = 24, kFilter2 = 25, kAmp = 1, kPreFx = 2, kDelay = 4, kReverb = 5, kPostFx = 6,
                  kEnv1 = 70, kEnv2 = 71, kEnv5 = 18, kLfo1 = 66, kLfo2 = 67, kLfo5 = 47 };
-    const auto line = [&g](float x1, float y1, float x2, float y2) { g.drawLine(x1, y1, x2, y2, 2.0f); };
+    const auto line = [&g](float x1, float y1, float x2, float y2) { g.drawLine(x1, y1, x2, y2, 2.5f); };
     const auto dashed = [&g](float x1, float y1, float x2, float y2, float width, float dash, float gap) {
         const float pattern[] = {dash, gap};
         g.drawDashedLine(juce::Line<float>(x1, y1, x2, y2), pattern, 2, width);
     };
 
-    // Orange lines behind the envelope and LFO rows.
-    g.setColour(kOrange);
+    // Red lines behind the envelope and LFO rows.
+    g.setColour(theme::kAccent.withAlpha(0.6f));
     for (const int id : {kEnv1, kLfo1}) {
         const float y = box(id).getCentreY();
-        g.drawLine(box(id).getX() - 45, y, box(id == kEnv1 ? kEnv5 : kLfo5).getRight() + 35, y, 4.0f);
+        g.drawLine(box(id).getX() - 45, y, box(id == kEnv1 ? kEnv5 : kLfo5).getRight() + 35, y, 2.4f);
     }
 
-    g.setColour(juce::Colour(0xff9a9fa8));
+    g.setColour(theme::kLine.brighter(0.25f));
     // Oscillators to mutants, and on to the mixer bus.
     for (const auto& [a, b] : {std::pair{kOsc1, kMut1}, {kMut1, kMut2}, {kOsc2, kMut3}, {kMut3, kMut4}, {kOsc3, kRing}})
         line(box(a).getRight(), box(a).getCentreY(), box(b).getX(), box(a).getCentreY());
@@ -365,13 +406,11 @@ void PanelView::paintModuleLines(juce::Graphics& g) {
 }
 
 void PanelView::paintHeadings(juce::Graphics& g) {
-    g.setFont(juce::FontOptions(20.0f, juce::Font::bold));
-    for (const Heading& h : kHeadings) {
-        const juce::Rectangle<float> r(h.x - h.w / 2, h.y, h.w, 26);
-        g.setColour(juce::Colour(0xff1e2024));
-        g.fillRoundedRectangle(r, 4);
-        g.setColour(kOrange);
-        g.drawText(h.text, r, juce::Justification::centred);
+    for (const Card& card : kCards) {
+        const juce::Rectangle<float> r(card.x, card.y, card.w, card.h);
+        theme::paintCard(g, r);
+        if (card.heading != nullptr)
+            theme::paintCardHeading(g, r, card.heading, theme::kBackground);
     }
 }
 
@@ -388,28 +427,30 @@ const char* const kArpLegends[hydra::FrontPanel::kArpSwitches][8] = {
     {"OFF", "52%", "54%", "58%", "62%", "66%", "70%", "75%"},
 };
 
-// The position names around an arp switch, each joined to its detent by a
-// leader line: the left four bottom to top, the right four top to bottom.
-void paintArpLegends(juce::Graphics& g, const Knob& k) {
-    const juce::Point<float> c(k.x, k.y);
-    constexpr float kRow = 12.5f;
-    g.setFont(juce::FontOptions(9.5f, juce::Font::bold));
-    for (int slot = 0; slot < 8; ++slot) {
-        const char* legend = kArpLegends[k.index][slot];
-        if (!*legend)
-            continue;
-        const bool left = slot < 4;
-        const float angle = juce::MathConstants<float>::pi * (-0.75f + 1.5f * static_cast<float>(slot) / 7.0f);
-        const float y = left ? k.y + (1.5f - static_cast<float>(slot)) * kRow : k.y + (static_cast<float>(slot) - 5.5f) * kRow;
-        const float side = left ? -1.0f : 1.0f;
-        const juce::Point<float> from = c.getPointOnCircumference(k.radius + 3, angle);
-        const juce::Point<float> elbow(k.x + side * (k.radius + 12), y), end(k.x + side * (k.radius + 18), y);
-        g.setColour(juce::Colour(0xff7d828b));
-        g.drawLine(juce::Line<float>(from, elbow), 1.2f);
-        g.drawLine(juce::Line<float>(elbow, end), 1.2f);
-        g.setColour(kLabel);
-        const juce::Rectangle<float> box = left ? juce::Rectangle<float>(end.x - 2 - 60, y - 7, 60, 14) : juce::Rectangle<float>(end.x + 2, y - 7, 60, 14);
-        g.drawText(legend, box, left ? juce::Justification::centredRight : juce::Justification::centredLeft);
+// The position names next to an arp switch: a four-row list on each side (the
+// left rows in reverse detent order), each with a short dash pointing to the
+// knob. The switch's current position is printed brighter.
+void paintArpLegends(juce::Graphics& g, const Knob& k, int position) {
+    constexpr float kRow = 15.0f;
+    const float dashNear = k.radius + 8.0f, dashFar = k.radius + 15.0f;
+    for (int row = 0; row < 4; ++row) {
+        const float y = k.y + (static_cast<float>(row) - 1.5f) * kRow;
+        for (const bool left : {true, false}) {
+            const int slot = left ? 3 - row : row + 4;
+            const char* legend = kArpLegends[k.index][slot];
+            if (!*legend)
+                continue;
+            const float side = left ? -1.0f : 1.0f;
+            const juce::Point<float> near(k.x + side * dashNear, y), far(k.x + side * dashFar, y);
+            const bool current = slot == position;
+            g.setColour(current ? theme::kAccent : theme::kTextDim.withAlpha(0.5f));
+            g.drawLine(juce::Line<float>(near, far), 1.4f);
+            g.setColour(current ? juce::Colour(0xfff2f2f2) : theme::kTextDim);
+            g.setFont(theme::font(12.0f, 0.3f));
+            const juce::Rectangle<float> box = left ? juce::Rectangle<float>(far.x - 4 - 88, y - 9, 88, 18)
+                                                    : juce::Rectangle<float>(far.x + 4, y - 9, 88, 18);
+            g.drawText(legend, box, left ? juce::Justification::centredRight : juce::Justification::centredLeft);
+        }
     }
 }
 }  // namespace
@@ -431,92 +472,136 @@ void PanelView::paintKnobs(juce::Graphics& g) {
         case Knob::Kind::Analog: value = knobValues_[static_cast<std::size_t>(k.index)]; break;
         }
         const juce::Point<float> c(k.x, k.y);
-        g.setColour(juce::Colour(0xff111215));
-        g.fillEllipse(juce::Rectangle<float>(k.radius * 2, k.radius * 2).withCentre(c));
-        g.setColour(juce::Colour(0xff50555e));
-        g.drawEllipse(juce::Rectangle<float>(k.radius * 2, k.radius * 2).withCentre(c), 2);
         const float angle = juce::MathConstants<float>::pi * (-0.75f + 1.5f * value);
-        g.setColour(juce::Colours::white);
-        g.drawLine(juce::Line<float>(c, c.getPointOnCircumference(k.radius - 4, angle)), 3);
-        if (k.kind == Knob::Kind::Arp)
-            paintArpLegends(g, k);
-        g.setColour(kLabel);
-        g.setFont(juce::FontOptions(12.0f));
+        theme::paintKnobBody(g, c, k.radius);
+        if (k.kind != Knob::Kind::Arp)
+            theme::paintValueArc(g, c, k.radius * 1.12f, value);
+        theme::paintKnobTick(g, c, k.radius, angle);
+        g.setColour(theme::kTextSoft);
         if (k.kind == Knob::Kind::Volume) {
-            g.drawText(k.label, juce::Rectangle<float>(140, 16).withCentre(c.translated(0, -k.radius - 14)),
+            g.setFont(theme::font(13.0f, 1.1f));
+            g.drawText(k.label, juce::Rectangle<float>(150, 18).withCentre(c.translated(0, -k.radius - 18)),
                        juce::Justification::centred);
-            g.drawText(text, juce::Rectangle<float>(140, 16).withCentre(c.translated(0, k.radius + 14)),
+            g.setColour(theme::kText);
+            g.setFont(theme::font(14.0f));
+            g.drawText(text, juce::Rectangle<float>(150, 18).withCentre(c.translated(0, k.radius + 22)),
                        juce::Justification::centred);
         } else {  // as on the hardware: the name under the knob
-            g.setFont(juce::FontOptions(13.0f, juce::Font::bold));
-            g.drawText(k.label, juce::Rectangle<float>(140, 16).withCentre(c.translated(0, k.radius + 16)),
+            g.setFont(theme::font(13.0f, 1.1f));
+            g.drawText(k.label, juce::Rectangle<float>(150, 18).withCentre(c.translated(0, k.radius + 16)),
                        juce::Justification::centred);
         }
     }
+    // The legend lists run over the neighbouring knobs' margins, so
+    // they are painted only once every knob body is down.
+    for (const Knob& k : kKnobs)
+        if (k.kind == Knob::Kind::Arp)
+            paintArpLegends(g, k, arpSlot(k.index, arpPositions_[static_cast<std::size_t>(k.index)]));
 }
 
 void PanelView::paintEncoders(juce::Graphics& g) {
-    const auto encoder = [&g](juce::Point<float> c, float radius) {
-        g.setColour(juce::Colour(0xff111215));
-        g.fillEllipse(juce::Rectangle<float>(radius * 2, radius * 2).withCentre(c));
-        g.setColour(juce::Colour(0xff5a5f68));
-        g.drawEllipse(juce::Rectangle<float>(radius * 2, radius * 2).withCentre(c), 2);
+    const auto encoder = [&g](juce::Point<float> c, float radius, float angle) {
+        theme::paintKnobBody(g, c, radius, 0.78f);
+        theme::paintKnobTick(g, c, radius, angle, 0.78f);
     };
     for (int e = 0; e < hydra::FrontPanel::kEncoders; ++e) {
         const juce::Point<float> c = encoderCentre(e);
-        encoder(c, kEncoderRadius);
         // The ring: 15 LEDs over 270 degrees, from bottom left to bottom right.
+        int lastLit = -1;
+        for (int l = 0; l < hydra::FrontPanel::kRingLeds; ++l)
+            if (lights_->rings[static_cast<std::size_t>(e)][static_cast<std::size_t>(l)])
+                lastLit = l;
+        // The cap's tick sits at the end of the lit arc.
+        const float angle = lastLit < 0 ? -juce::MathConstants<float>::pi * 0.75f
+                                        : juce::MathConstants<float>::pi * (-0.75f + 1.5f * static_cast<float>(lastLit) / 14.0f);
+        encoder(c, kEncoderRadius, angle);
+        // The ring dots sit inside the knob's margins: drawn over it.
         for (int l = 0; l < hydra::FrontPanel::kRingLeds; ++l) {
-            const float angle = juce::MathConstants<float>::pi * (-0.75f + 1.5f * static_cast<float>(l) / 14.0f);
+            const float dotAngle = juce::MathConstants<float>::pi * (-0.75f + 1.5f * static_cast<float>(l) / 14.0f);
             const bool lit = lights_->rings[static_cast<std::size_t>(e)][static_cast<std::size_t>(l)];
-            g.setColour(lit ? juce::Colour(0xff6fd3ff) : juce::Colour(0xff32363c));
-            g.fillEllipse(juce::Rectangle<float>(6, 6).withCentre(c.getPointOnCircumference(kEncoderRadius + 10, angle)));
+            theme::paintRingDot(g, c.getPointOnCircumference(kEncoderRadius + 5.5f, dotAngle), 2.8f, lit);
         }
-        g.setColour(kLabel);
-        g.setFont(juce::FontOptions(12.0f));
-
     }
-    // The patch knob's light ring, in the patch's colour.
+    // The data encoder is endless: a body without a position mark.
+    theme::paintKnobBody(g, {kDataX, kDataY}, kDataRadius, 0.78f);
+    // The patch knob's light ring: a flat grey outer ring with a flat red ring
+    // inside it. The LED drives the brightness, but the ring always reads.
     {
-        const juce::Rectangle<float> ring = juce::Rectangle<float>(2 * (kDataRadius + 9), 2 * (kDataRadius + 9)).withCentre({kDataX, kDataY});
-        const juce::Colour colour = ledColour(lights_->patchRing, juce::Colour(0xff32363c));
-        if (lights_->patchRing != 0) {  // a soft glow outside the ring
-            g.setColour(colour.withAlpha(0.25f));
-            g.drawEllipse(ring.expanded(5), 6.0f);
-        }
-        g.setColour(colour);
-        g.drawEllipse(ring, 9.0f);
+        const float level = lights_->patchRing != 0 ? 1.0f : 0.45f;
+        g.setColour(juce::Colour(0xff55585e));
+        g.drawEllipse(juce::Rectangle<float>(2 * (kDataRadius + 18), 2 * (kDataRadius + 18))
+                          .withCentre({kDataX, kDataY}),
+                      2.6f);
+        g.setColour(theme::kAccent.withAlpha(level));
+        g.drawEllipse(juce::Rectangle<float>(2 * (kDataRadius + 10), 2 * (kDataRadius + 10))
+                          .withCentre({kDataX, kDataY}),
+                      4.0f);
     }
-    encoder({kDataX, kDataY}, kDataRadius);
-    g.setColour(kLabel);
-    g.setFont(juce::FontOptions(12.0f));
-    g.drawText("PATCH", juce::Rectangle<float>(80, 16).withCentre({kDataX, kDataY}), juce::Justification::centred);
+    g.setColour(juce::Colour(0xff9ea2a8));
+    g.setFont(theme::font(13.0f, 1.6f));
+    g.drawText("PATCH", juce::Rectangle<float>(90, 18).withCentre({kDataX, kDataY + 6}), juce::Justification::centred);
 }
 
+
+namespace {
+// The pad faces the design assigns to each position (bottom row first, as
+// kPadLegends). Unlit pads show the colourway so the panel keeps the design's
+// layout; lit pads show the LED's actual colour.
+const juce::Colour kPadIdle[3][8] = {
+    {juce::Colour(0xffc9a13a), juce::Colour(0xffb54a4a), juce::Colour(0xff4b89bf), juce::Colour(0xffb54a4a),
+     juce::Colour(0xff4b89bf), juce::Colour(0xff4b89bf), juce::Colour(0xffb54a4a), juce::Colour(0xff4b89bf)},
+    {juce::Colour(0xffb54a4a), juce::Colour(0xff4b89bf), juce::Colour(0xffb54a4a), juce::Colour(0xff4b89bf),
+     juce::Colour(0xffc9a13a), juce::Colour(0xffb54a4a), juce::Colour(0xff4b89bf), juce::Colour(0xffb54a4a)},
+    {juce::Colour(0xff4b89bf), juce::Colour(0xff4b89bf), juce::Colour(0xffb54a4a), juce::Colour(0xff4b89bf),
+     juce::Colour(0xffb54a4a), juce::Colour(0xff4b89bf), juce::Colour(0xffb54a4a), juce::Colour(0xff4b89bf)},
+};
+
+juce::Colour padColour(std::uint32_t rgb) {
+    const int r8 = static_cast<int>(rgb >> 16 & 0xFF), g8 = static_cast<int>(rgb >> 8 & 0xFF), b8 = static_cast<int>(rgb & 0xFF);
+    if (r8 + g8 + b8 == 0)
+        return juce::Colour(0xff353637);
+    if (r8 > g8 + 40 && r8 > b8 + 40)
+        return g8 > 110 ? juce::Colour(0xffc9a13a) : juce::Colour(0xffb54a4a);
+    return juce::Colour(0xff4b89bf);
+}
+
+void paintPadFace(juce::Graphics& g, juce::Rectangle<float> r, juce::Colour face, bool held, float corner) {
+    g.setColour(held ? face.darker(0.25f) : face);
+    g.fillRoundedRectangle(r, corner);
+}
+}  // namespace
 
 void PanelView::paintPads(juce::Graphics& g) {
     for (int row = 0; row < hydra::FrontPanel::kPadRows; ++row)
         for (int column = 0; column < hydra::FrontPanel::kPadColumns; ++column) {
             const juce::Rectangle<float> r = padBounds(row, column);
             const std::uint32_t rgb = lights_->pads[static_cast<std::size_t>(row * hydra::FrontPanel::kPadColumns + column)];
-            g.setColour(ledColour(rgb, juce::Colour(0xff2e3238)));
-            g.fillRoundedRectangle(r, 6);
+            const bool lit = rgb != 0;
+            const float corner = 9.0f;
             const bool held = active_.kind == Target::Kind::Pad &&
                               active_.index == row * hydra::FrontPanel::kPadColumns + column;
-            g.setColour(held ? juce::Colours::white : juce::Colour(0xff4a4f58));
-            g.drawRoundedRectangle(r, 6, held ? 3.0f : 1.5f);
+            paintPadFace(g, r, lit ? padColour(rgb) : kPadIdle[row][column], held, corner);
+            // The lit pads' corner pip.
+            if (lit) {
+                const int r8 = static_cast<int>(rgb >> 16 & 0xFF), g8 = static_cast<int>(rgb >> 8 & 0xFF),
+                          b8 = static_cast<int>(rgb & 0xFF);
+                if (r8 > 100 && g8 > 60 && r8 > b8 * 2) {
+                    g.setColour(theme::kAccentBright);
+                    g.fillEllipse(juce::Rectangle<float>(6, 6).withCentre({r.getRight() - 10.0f, r.getY() + 10.0f}));
+                }
+            }
             const char* legend = kPadLegends[row][column];
             if (*legend) {
-                const juce::Rectangle<float> label(r.getX() - 10, r.getBottom() + 3, r.getWidth() + 20, 14);
-                g.setFont(juce::FontOptions(11.0f, juce::Font::bold));
-                if (std::strcmp(legend, "KEY") == 0) {  // printed on an orange field
-                    const juce::Rectangle<float> box = label.withSizeKeepingCentre(36, 14);
-                    g.setColour(kOrange);
-                    g.fillRoundedRectangle(box, 2);
-                    g.setColour(juce::Colour(0xff1b1d21));
+                const juce::Rectangle<float> label(r.getX() - 10, r.getBottom() + 4, r.getWidth() + 20, 16);
+                g.setFont(theme::font(12.0f));
+                if (std::strcmp(legend, "KEY") == 0) {  // in a small red-outlined pill
+                    const juce::Rectangle<float> box = label.withSizeKeepingCentre(44, 18);
+                    g.setColour(theme::kAccent.withAlpha(0.7f));
+                    g.drawRoundedRectangle(box, box.getHeight() / 2, 1.2f);
+                    g.setColour(theme::kText);
                     g.drawText(legend, box, juce::Justification::centred);
                 } else {
-                    g.setColour(kOrange);
+                    g.setColour(theme::kAccentDim);
                     g.drawText(legend, label, juce::Justification::centred);
                 }
             }

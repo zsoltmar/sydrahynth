@@ -4,10 +4,18 @@
 #include <cmath>
 
 #include "HydraProcessor.h"
+#include "Theme.h"
 
 HydraEditor::HydraEditor(HydraProcessor& owner) : AudioProcessorEditor(owner), processor_(owner), browser_(owner), panel_(owner) {
-    title_.setText("Sydrahynth", juce::dontSendNotification);
-    title_.setFont(juce::FontOptions(18.0f, juce::Font::bold));
+    setLookAndFeel(&lnf_);
+    title_.setText("S Y D R A H Y N T H", juce::dontSendNotification);
+    title_.setFont(theme::font(14.0f, 1.0f));
+    title_.setColour(juce::Label::textColourId, theme::kTextFaint);
+    firmware_.setFont(theme::font(13.0f));
+    firmware_.setColour(juce::Label::textColourId, theme::kAccentDim);
+    status_.setFont(theme::font(13.0f));
+    status_.setColour(juce::Label::textColourId, theme::kTextDim);
+    status_.setJustificationType(juce::Justification::centredRight);
     for (juce::Label* label : {&title_, &firmware_, &status_})
         addAndMakeVisible(*label);
     addAndMakeVisible(chooseFirmware_);
@@ -96,19 +104,32 @@ void HydraEditor::showBrowser(bool visible, bool resizeWindow) {
         resized();
 }
 
-void HydraEditor::paint(juce::Graphics& g) { g.fillAll(juce::Colour(0xff1e2126)); }
+void HydraEditor::paint(juce::Graphics& g) {
+    g.fillAll(theme::kBackground);
+    // The status bar's bottom hairline.
+    g.setColour(juce::Colours::black.withAlpha(0.85f));
+    g.fillRect(0.0f, kBarHeight - 1.0f, static_cast<float>(getWidth()), 1.0f);
+    // The live dot at the right end of the status text.
+    const juce::String text = status_.getText();
+    if (text.isNotEmpty()) {
+        const float width = theme::textWidth(status_.getFont(), text);
+        const float x = status_.getRight() - width - 15.0f, y = kBarHeight / 2.0f;
+        g.setColour(theme::kAccent);
+        g.fillEllipse(x, y - 3.5f, 7.0f, 7.0f);
+    }
+}
 
 void HydraEditor::resized() {
     auto area = getLocalBounds();
-    auto bar = area.removeFromTop(kBarHeight).reduced(8, 4);
-    title_.setBounds(bar.removeFromLeft(130));
-    togglePatches_.setBounds(bar.removeFromLeft(80));
+    auto bar = area.removeFromTop(kBarHeight).reduced(14, 6);
+    title_.setBounds(bar.removeFromLeft(185));
+    togglePatches_.setBounds(bar.removeFromLeft(96));
     bar.removeFromLeft(12);
-    chooseFirmware_.setBounds(bar.removeFromRight(100));
+    chooseFirmware_.setBounds(bar.removeFromRight(110));
     bar.removeFromRight(8);
-    latency_.setBounds(bar.removeFromRight(140));
+    latency_.setBounds(bar.removeFromRight(150));
     bar.removeFromRight(8);
-    status_.setBounds(bar.removeFromRight(300));
+    status_.setBounds(bar.removeFromRight(320));
     firmware_.setBounds(bar);
     if (browser_.isVisible())
         browser_.setBounds(area.removeFromLeft(kBrowserWidth));
@@ -125,6 +146,10 @@ void HydraEditor::timerCallback() {
                       juce::dontSendNotification);
     chooseFirmware_.setTooltip(missing ? juce::String("Choose the firmware file") : "Firmware: " + file.getFullPathName());
     status_.setText(processor_.statusText(), juce::dontSendNotification);
+    // The live dot sits just left of the text and slides with its width:
+    // repaint the strip covering every position it can take so its old spot
+    // is cleared.
+    repaint(status_.getBounds().translated(-24, 0).withHeight(kBarHeight));
 }
 
 void HydraEditor::chooseFirmware() {

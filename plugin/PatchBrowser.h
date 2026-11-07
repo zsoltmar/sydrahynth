@@ -21,6 +21,7 @@ public:
     ~PatchBrowser() override;
 
     void paint(juce::Graphics& g) override;
+    void paintOverChildren(juce::Graphics& g) override;
     void resized() override;
 
 private:
@@ -40,10 +41,11 @@ private:
     std::uint64_t generation_ = 0;
     bool live_ = false, updating_ = false;
     int bank_ = 0, lastCurrent_ = -1;
+    juce::String currentSlot_, currentName_;  // drawn in paint()
+    juce::Rectangle<int> bankBar_, listWell_;  // the list sits inset inside its well
 
-    juce::Label current_;
     std::array<juce::TextButton, Patches::kBanks> bankButtons_;
     juce::ListBox list_;
-    juce::TextButton loadBank_{"Load bank..."};
+    juce::TextButton loadBank_{"LOAD BANK..."};
     std::unique_ptr<juce::FileChooser> chooser_;
 };

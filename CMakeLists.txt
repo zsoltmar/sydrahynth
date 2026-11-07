@@ -109,12 +109,16 @@ if (HYDRA_BUILD_PLUGIN AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/JUCE/CMak
         plugin/PanelView.cpp
         plugin/PatchBrowser.cpp)
     target_include_directories(Sydrahynth PRIVATE plugin)
+    juce_add_binary_data(SydrahynthAssets SOURCES
+        plugin/fonts/ClearSans-Regular.ttf
+        plugin/fonts/ClearSans-Medium.ttf
+        plugin/fonts/ClearSans-Bold.ttf)
     target_compile_definitions(Sydrahynth PUBLIC
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0)
     target_link_libraries(Sydrahynth
-        PRIVATE hydra_core juce::juce_audio_utils
+        PRIVATE hydra_core SydrahynthAssets juce::juce_audio_utils
         PUBLIC juce::juce_recommended_config_flags)
     target_compile_options(Sydrahynth PRIVATE -Wall -Wextra)
 
