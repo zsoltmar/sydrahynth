@@ -102,6 +102,7 @@ if (HYDRA_BUILD_PLUGIN AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/JUCE/CMak
         IS_MIDI_EFFECT FALSE
         VST3_CATEGORIES Instrument Synth
         LV2URI "urn:sydrahynth:plugin"
+        ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/ui/app-logo.png"
         COPY_PLUGIN_AFTER_BUILD FALSE)
     target_sources(Sydrahynth PRIVATE
         plugin/HydraProcessor.cpp
@@ -110,7 +111,7 @@ if (HYDRA_BUILD_PLUGIN AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/JUCE/CMak
         plugin/PatchBrowser.cpp)
     target_include_directories(Sydrahynth PRIVATE plugin)
     file(GLOB KNOB_ASSETS CONFIGURE_DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/ui/*.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ui/knob-sh.png"
         "${CMAKE_CURRENT_SOURCE_DIR}/ui/knob-wiper/*.png"
         "${CMAKE_CURRENT_SOURCE_DIR}/ui/button/*.png")
     juce_add_binary_data(SydrahynthAssets SOURCES
