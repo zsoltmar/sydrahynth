@@ -47,7 +47,8 @@ private:
 
     HydraProcessor& processor_;
     theme::LookAndFeel lnf_;
-    juce::Label title_, firmware_, status_;
+    juce::Rectangle<float> logoRect_;  // the header wordmark's bounds
+    juce::Label firmware_, status_;
     juce::TextButton chooseFirmware_{"FIRMWARE..."}, togglePatches_{"PATCHES"};
     juce::ComboBox latency_;
     std::unique_ptr<juce::FileChooser> chooser_;

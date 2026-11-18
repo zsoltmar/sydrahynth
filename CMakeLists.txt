@@ -109,10 +109,13 @@ if (HYDRA_BUILD_PLUGIN AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/JUCE/CMak
         plugin/PanelView.cpp
         plugin/PatchBrowser.cpp)
     target_include_directories(Sydrahynth PRIVATE plugin)
+    file(GLOB KNOB_ASSETS CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/ui/*.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ui/knob-wiper/*.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ui/button/*.png")
     juce_add_binary_data(SydrahynthAssets SOURCES
-        plugin/fonts/ClearSans-Regular.ttf
-        plugin/fonts/ClearSans-Medium.ttf
-        plugin/fonts/ClearSans-Bold.ttf)
+        plugin/fonts/Gabarito-Regular.ttf
+        ${KNOB_ASSETS})
     target_compile_definitions(Sydrahynth PUBLIC
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0

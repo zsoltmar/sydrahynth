@@ -4,24 +4,20 @@
 #include "Theme.h"
 
 namespace {
-// The bank letter buttons inside their dark track: the selected segment has a
-// flat face and a red edge.
+// The bank letter buttons inside their dark track: the same sliced faces as
+// the panel buttons; the shown bank's LED is lit.
 class BankLookAndFeel : public juce::LookAndFeel_V4 {
 public:
-    void drawButtonBackground(juce::Graphics& g, juce::Button& b, const juce::Colour&, bool, bool) override {
-        if (!b.getToggleState())
-            return;
+    void drawButtonBackground(juce::Graphics& g, juce::Button& b, const juce::Colour&, bool, bool down) override {
         const juce::Rectangle<float> r = b.getLocalBounds().toFloat().reduced(2.5f, 3.0f);
-        g.setColour(juce::Colour(0xff2e2f32));
-        g.fillRoundedRectangle(r, 5.0f);
-        g.setColour(theme::kAccent.withAlpha(0.8f));
-        g.drawRoundedRectangle(r, 5.0f, 1.0f);
+        theme::paintButtonFace(g, r, down);
+        theme::paintLedBar(g, r, b.getToggleState() ? 1.0f : 0.0f);
     }
 
     void drawButtonText(juce::Graphics& g, juce::TextButton& b, bool, bool) override {
         g.setColour(b.getToggleState() ? theme::kText : theme::kTextDim);
         g.setFont(theme::font(13.0f));
-        g.drawText(b.getButtonText(), b.getLocalBounds(), juce::Justification::centred);
+        g.drawText(b.getButtonText(), b.getLocalBounds().reduced(0, 8), juce::Justification::centredTop);
     }
 };
 }  // namespace
@@ -75,12 +71,7 @@ void PatchBrowser::paint(juce::Graphics& g) {
                                                           static_cast<int>(card.getRight() - 10 - x - 60), 22),
                          juce::Justification::centredLeft, 1);
     }
-    // The dark track behind the bank letter buttons, and the list's well.
-    const juce::Rectangle<float> track = bankBar_.toFloat();
-    g.setColour(theme::kWell);
-    g.fillRoundedRectangle(track, track.getHeight() / 2);
-    g.setColour(juce::Colours::black.withAlpha(0.7f));
-    g.drawRoundedRectangle(track, track.getHeight() / 2, 1.0f);
+    // The list's well; the bank buttons sit directly on the card.
     g.setColour(theme::kWellDeep);
     g.fillRoundedRectangle(listWell_.toFloat(), 8.0f);
 }
@@ -104,13 +95,13 @@ void PatchBrowser::resized() {
     auto area = getLocalBounds().reduced(12, 12);
     area.removeFromTop(30);  // the header, drawn in paint()
     area.removeFromTop(4);
-    bankBar_ = area.removeFromTop(28);
-    auto banks = bankBar_.reduced(3);
+    bankBar_ = area.removeFromTop(44);
+    auto banks = bankBar_.reduced(3, 4);
     const int width = banks.getWidth() / Patches::kBanks;
     for (auto& button : bankButtons_)
         button.setBounds(banks.removeFromLeft(width));
     area.removeFromTop(6);
-    loadBank_.setBounds(area.removeFromBottom(30));
+    loadBank_.setBounds(area.removeFromBottom(26).withSizeKeepingCentre(area.getWidth(), 50));
     area.removeFromBottom(8);
     listWell_ = area;
     list_.setBounds(area.reduced(0, 5));  // pad the rows off the well's rounded caps

@@ -4,19 +4,17 @@
 #include <cmath>
 
 #include "HydraProcessor.h"
+#include "LogoData.h"
 #include "Theme.h"
 
 HydraEditor::HydraEditor(HydraProcessor& owner) : AudioProcessorEditor(owner), processor_(owner), browser_(owner), panel_(owner) {
     setLookAndFeel(&lnf_);
-    title_.setText("S Y D R A H Y N T H", juce::dontSendNotification);
-    title_.setFont(theme::font(14.0f, 1.0f));
-    title_.setColour(juce::Label::textColourId, theme::kTextFaint);
     firmware_.setFont(theme::font(13.0f));
     firmware_.setColour(juce::Label::textColourId, theme::kAccentDim);
     status_.setFont(theme::font(13.0f));
     status_.setColour(juce::Label::textColourId, theme::kTextDim);
     status_.setJustificationType(juce::Justification::centredRight);
-    for (juce::Label* label : {&title_, &firmware_, &status_})
+    for (juce::Label* label : {&firmware_, &status_})
         addAndMakeVisible(*label);
     addAndMakeVisible(chooseFirmware_);
     chooseFirmware_.onClick = [this] { chooseFirmware(); };
@@ -106,9 +104,19 @@ void HydraEditor::showBrowser(bool visible, bool resizeWindow) {
 
 void HydraEditor::paint(juce::Graphics& g) {
     g.fillAll(theme::kBackground);
+    g.setColour(theme::kHeader);
+    g.fillRect(0, 0, getWidth(), kBarHeight);
     // The status bar's bottom hairline.
     g.setColour(juce::Colours::black.withAlpha(0.85f));
     g.fillRect(0.0f, kBarHeight - 1.0f, static_cast<float>(getWidth()), 1.0f);
+    // The wordmark in the header's top-left, filled in the accent as the
+    // supplied SVG specifies.
+    {
+        juce::Path logo = logoArtwork();
+        logo.applyTransform(logo.getTransformToScaleToFit(logoRect_, true));
+        g.setColour(theme::kAccent);
+        g.fillPath(logo);
+    }
     // The live dot at the right end of the status text.
     const juce::String text = status_.getText();
     if (text.isNotEmpty()) {
@@ -122,10 +130,22 @@ void HydraEditor::paint(juce::Graphics& g) {
 void HydraEditor::resized() {
     auto area = getLocalBounds();
     auto bar = area.removeFromTop(kBarHeight).reduced(14, 6);
-    title_.setBounds(bar.removeFromLeft(185));
-    togglePatches_.setBounds(bar.removeFromLeft(96));
-    bar.removeFromLeft(12);
-    chooseFirmware_.setBounds(bar.removeFromRight(110));
+    // The wordmark at the header's left edge, sized to its own 1485:145 aspect.
+    const float logoH = 13.0f;
+    logoRect_ = {static_cast<float>(bar.getX()), bar.getY() + (bar.getHeight() - logoH) / 2.0f,
+                 logoH * (1485.0f / 145.0f), logoH};
+    bar.removeFromLeft(juce::roundToInt(logoRect_.getWidth()) + 10);
+    // The face sits inside the frame by 0.4*faceH. The patches card is inset
+    // 5px from the browser, so the face ends on the card's right edge.
+    constexpr int kPatchesW = 116, kPatchesH = 50, kCardInset = 5;
+    const int faceMarginX = juce::roundToInt(kPatchesH * 0.5f * 0.4f);
+    const int patchesRight = kBrowserWidth - kCardInset + faceMarginX;
+    togglePatches_.setBounds(patchesRight - kPatchesW, (kBarHeight - kPatchesH) / 2, kPatchesW, kPatchesH);
+    togglePatches_.toFront(false);
+    const int pastButton = togglePatches_.getRight() + 12 - bar.getX();
+    if (pastButton > 0)
+        bar.removeFromLeft(pastButton);
+    chooseFirmware_.setBounds(bar.removeFromRight(110).withSizeKeepingCentre(130, 50));
     bar.removeFromRight(8);
     latency_.setBounds(bar.removeFromRight(150));
     bar.removeFromRight(8);

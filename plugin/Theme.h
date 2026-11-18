@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include <unordered_map>
+
 #include "BinaryData.h"
 
 // The palette and widget styling of design/sydrahynth.svg: a near-black, warm
@@ -10,6 +12,7 @@
 namespace theme {
 
 inline const juce::Colour kBackground{0xff1f1d1d};   // window and panel
+inline const juce::Colour kHeader{0xff141212};       // status bar, a step darker than the panel
 inline const juce::Colour kCard{0xff1e1b1b};         // section card fill
 inline const juce::Colour kBrowserCard{0xd6181617};  // patch browser card (84%)
 inline const juce::Colour kWell{0xff0e0d0d};         // recessed areas (bank bar, list)
@@ -18,29 +21,26 @@ inline const juce::Colour kText{0xffe8e8e8};
 inline const juce::Colour kTextSoft{0xffc4c4c4};
 inline const juce::Colour kTextDim{0xff9e9e9e};
 inline const juce::Colour kTextFaint{0xff858585};
-inline const juce::Colour kAccent{0xffff3b3b};
-inline const juce::Colour kAccentHot{0xffff5a5a};    // arc core, knob tick
-inline const juce::Colour kAccentBright{0xffff6b6b}; // dot centres
-inline const juce::Colour kAccentDim{0xffb24f4f};    // secondary legends
+inline const juce::Colour kAccent{0xff09fc61};
+inline const juce::Colour kAccentHot{0xff40ff7d};    // arc core, knob tick
+inline const juce::Colour kAccentBright{0xff66ff94}; // dot centres
+inline const juce::Colour kAccentDim{0xff3fa05a};    // secondary legends
 inline const juce::Colour kLedOff{0xff4a4d52};       // unlit button LED bar
 inline const juce::Colour kRingOff{0xff4a4d52};      // unlit encoder ring dot
 inline const juce::Colour kTrack{0xff54575d};        // knob value-arc track
+inline const juce::Colour kKnob{0xff48484c};         // knob face
 inline const juce::Colour kTick{0xff16171a};         // knob tick body
 inline const juce::Colour kLine{0xff6e6e6e};         // module signal lines
 
-// Clear Sans, embedded with the plugin: the design's control font.
-inline const juce::Typeface::Ptr& clearSans(int weight) {
+// Gabarito Regular — the family's lightest cut (the weight axis starts at 400).
+inline const juce::Typeface::Ptr& gabarito() {
     static const juce::Typeface::Ptr regular =
-        juce::Typeface::createSystemTypefaceFor(BinaryData::ClearSansRegular_ttf, BinaryData::ClearSansRegular_ttfSize);
-    static const juce::Typeface::Ptr medium =
-        juce::Typeface::createSystemTypefaceFor(BinaryData::ClearSansMedium_ttf, BinaryData::ClearSansMedium_ttfSize);
-    static const juce::Typeface::Ptr bold =
-        juce::Typeface::createSystemTypefaceFor(BinaryData::ClearSansBold_ttf, BinaryData::ClearSansBold_ttfSize);
-    return weight >= 700 ? bold : (weight >= 500 ? medium : regular);
+        juce::Typeface::createSystemTypefaceFor(BinaryData::GabaritoRegular_ttf, BinaryData::GabaritoRegular_ttfSize);
+    return regular;
 }
 
-inline juce::Font font(float size, float letterSpacing = 0.0f, int weight = 400) {
-    juce::Font f(juce::FontOptions(clearSans(weight)).withPointHeight(size));
+inline juce::Font font(float size, float letterSpacing = 0.0f) {
+    juce::Font f(juce::FontOptions(gabarito()).withPointHeight(size));
     f.setExtraKerningFactor(letterSpacing / size);
     return f;
 }
@@ -51,25 +51,109 @@ inline float textWidth(const juce::Font& f, juce::StringRef text) {
     return glyphs.getBoundingBox(0, -1, true).getWidth();
 }
 
-// A panel button: a flat face with a hairline edge; pressed goes darker.
-inline void paintButtonFace(juce::Graphics& g, juce::Rectangle<float> r, bool held, float corner = 6.0f) {
-    g.setColour(held ? juce::Colour(0xff1d1e20) : juce::Colour(0xff2e2f32));
-    g.fillRoundedRectangle(r, corner);
-    g.setColour(juce::Colours::black.withAlpha(0.55f));
-    g.drawRoundedRectangle(r.reduced(0.5f), corner - 0.5f, 1.0f);
+// The sliced button artwork: 280x200 frames holding a solid face at (40,50)
+// 200x100, with the drop shadow padding below it. The glow layer's LED bar
+// sits inside the face's lower half. Both layers share the same frame.
+// Margins are derived from the height, matching how assembledSlices draws
+// the caps (capW = 70*frameH/200 → margin 40/70 of a cap), so the rendered
+// face lands exactly on r regardless of button width.
+inline juce::Rectangle<float> buttonFrame(juce::Rectangle<float> r) {
+    const float my = r.getHeight() * 0.5f, mx = r.getHeight() * 0.4f;
+    return {r.getX() - mx, r.getY() - my, r.getWidth() + 2.0f * mx, r.getHeight() + 2.0f * my};
 }
 
-// The LED inside a panel button: a flat dark slot holding the red bar. It sits
-// at 77% of the face height, ~half the face width.
+inline const juce::Image& buttonSlice(int i) {
+    static const juce::Image imgs[3] = {
+        juce::ImageFileFormat::loadFrom(BinaryData::buttonleft_png, BinaryData::buttonleft_pngSize),
+        juce::ImageFileFormat::loadFrom(BinaryData::buttonmiddle_png, BinaryData::buttonmiddle_pngSize),
+        juce::ImageFileFormat::loadFrom(BinaryData::buttonright_png, BinaryData::buttonright_pngSize)};
+    return imgs[i];
+}
+
+inline const juce::Image& glowSlice(int i) {
+    static const juce::Image imgs[3] = {
+        juce::ImageFileFormat::loadFrom(BinaryData::glowleft_png, BinaryData::glowleft_pngSize),
+        juce::ImageFileFormat::loadFrom(BinaryData::glowmiddle_png, BinaryData::glowmiddle_pngSize),
+        juce::ImageFileFormat::loadFrom(BinaryData::glowright_png, BinaryData::glowright_pngSize)};
+    return imgs[i];
+}
+
+// Assembles a slice set into one image sized to the target frame: the caps
+// keep their aspect (scaled only by the frame's vertical factor) and the
+// middle fills the gap, so seams land inside the assembled image rather than
+// at a draw boundary. Cached per (w,h) — blitted 1:1 afterwards.
+inline const juce::Image& assembledSlices(juce::Rectangle<float> d, bool glow) {
+    const int w = juce::roundToInt(d.getWidth()), h = juce::roundToInt(d.getHeight());
+    static std::unordered_map<std::uint64_t, juce::Image> cache;
+    const std::uint64_t key = (std::uint64_t(w) << 17) | (std::uint64_t(h) << 1) | std::uint64_t(glow);
+    juce::Image& img = cache[key];
+    if (img.isNull()) {
+        img = juce::Image(juce::Image::ARGB, w, h, true);
+        juce::Graphics ig(img);
+        const int capW = juce::jmin(w / 2,
+                                    juce::roundToInt((glow ? 120.0f : 70.0f) * static_cast<float>(h) / 200.0f));
+        const juce::Image& l = glow ? glowSlice(0) : buttonSlice(0);
+        const juce::Image& m = glow ? glowSlice(1) : buttonSlice(1);
+        const juce::Image& r = glow ? glowSlice(2) : buttonSlice(2);
+        ig.drawImage(l, 0, 0, capW, h, 0, 0, l.getWidth(), l.getHeight());
+        ig.drawImage(m, capW, 0, w - 2 * capW, h, 0, 0, m.getWidth(), m.getHeight());
+        ig.drawImage(r, w - capW, 0, capW, h, 0, 0, r.getWidth(), r.getHeight());
+    }
+    return img;
+}
+
+// The pressed face: the assembled artwork with every pixel darkened in
+// place, so the whole button — caps, bevel and middle — sinks uniformly.
+inline const juce::Image& pressedSlices(juce::Rectangle<float> d) {
+    const int w = juce::roundToInt(d.getWidth()), h = juce::roundToInt(d.getHeight());
+    static std::unordered_map<std::uint64_t, juce::Image> cache;
+    const std::uint64_t key = (std::uint64_t(w) << 17) | (std::uint64_t(h) << 1);
+    juce::Image& img = cache[key];
+    if (img.isNull()) {
+        img = assembledSlices(d, false).createCopy();
+        const juce::Image::BitmapData bits(img, juce::Image::BitmapData::readWrite);
+        for (int y = 0; y < bits.height; ++y)
+            for (int x = 0; x < bits.width; ++x)
+                bits.setPixelColour(x, y, bits.getPixelColour(x, y).withMultipliedBrightness(0.55f));
+    }
+    return img;
+}
+
+// A panel button: the sliced face artwork; held draws the darkened copy so
+// the whole face reads depressed. clipRadius rounds the face harder than
+// the artwork's own edge for buttons that should read as pills. faceOnly
+// draws just the face sub-rect of the frame: for components whose Graphics
+// is clipped to their bounds, where the baked shadow would otherwise be
+// cut hard at the corners.
+inline void paintButtonFace(juce::Graphics& g, juce::Rectangle<float> r, bool held, float clipRadius = 0.0f,
+                            bool faceOnly = false) {
+    const juce::Rectangle<float> d = buttonFrame(r);
+    const juce::Image& img = held ? pressedSlices(d) : assembledSlices(d, false);
+    g.saveState();
+    if (clipRadius > 0.0f) {
+        juce::Path clip;
+        clip.addRoundedRectangle(r, clipRadius);
+        g.reduceClipRegion(clip);
+    }
+    if (faceOnly) {
+        const int mx = juce::roundToInt((img.getWidth() - r.getWidth()) / 2.0f);
+        const int my = juce::roundToInt((img.getHeight() - r.getHeight()) / 2.0f);
+        g.drawImage(img, juce::roundToInt(r.getX()), juce::roundToInt(r.getY()),
+                    juce::roundToInt(r.getWidth()), juce::roundToInt(r.getHeight()),
+                    mx, my, juce::roundToInt(r.getWidth()), juce::roundToInt(r.getHeight()));
+    } else {
+        g.drawImageAt(img, juce::roundToInt(d.getX()), juce::roundToInt(d.getY()));
+    }
+    g.restoreState();
+}
+
+// The LED inside a panel button: the sliced glow layer, dimmed when unlit.
 inline void paintLedBar(juce::Graphics& g, juce::Rectangle<float> button, float level) {
-    const juce::Rectangle<float> slot = button.withSizeKeepingCentre(juce::jmin(button.getWidth() * 0.48f, 34.0f), 3.0f)
-                                            .translated(0, button.getHeight() * 0.265f);
-    g.setColour(juce::Colour(0xff141414));
-    g.fillRoundedRectangle(slot, slot.getHeight() / 2);
-    // The unlit LED still reads as a dim red bar inside the slot.
-    const juce::Rectangle<float> bar = slot.reduced(1.0f, 0.0f);
-    g.setColour(level <= 0.01f ? kAccent.withAlpha(0.25f) : kAccent.withAlpha(0.35f + 0.65f * level));
-    g.fillRoundedRectangle(bar, bar.getHeight() / 2);
+    const juce::Rectangle<float> d = buttonFrame(button);
+    g.setOpacity(0.12f + 0.88f * level);
+    const juce::Image& img = assembledSlices(d, true);
+    g.drawImageAt(img, juce::roundToInt(d.getX()), juce::roundToInt(d.getY()));
+    g.setOpacity(1.0f);
 }
 
 // A section card: its fill blends into the background; the border is an
@@ -170,11 +254,16 @@ public:
     }
 
     void drawButtonBackground(juce::Graphics& g, juce::Button& b, const juce::Colour&, bool highlighted, bool down) override {
-        const juce::Rectangle<float> r = b.getLocalBounds().toFloat().reduced(0.5f, 0.5f);
-        paintButtonFace(g, r, down, r.getHeight() * 0.28f);
+        // Component bounds carry the whole frame (face + shadow margins) so
+        // the artwork draws exactly like the painted panel buttons.
+        const auto bounds = b.getLocalBounds().toFloat();
+        const float faceH = bounds.getHeight() * 0.5f, mx = faceH * 0.4f;
+        const juce::Rectangle<float> r = {bounds.getX() + mx, bounds.getY() + bounds.getHeight() * 0.25f,
+                                          bounds.getWidth() - 2.0f * mx, faceH};
+        paintButtonFace(g, r, down);
         if (highlighted) {
             g.setColour(juce::Colours::white.withAlpha(0.06f));
-            g.fillRoundedRectangle(r, r.getHeight() * 0.28f);
+            g.fillRoundedRectangle(r, r.getHeight() * 0.14f);
         }
     }
 

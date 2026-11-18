@@ -1,5 +1,7 @@
 build*/
 external/
+# Local design sources. The slices the build embeds live in ui/.
+design/
 # ASM firmware and manuals: user-supplied, never commit
 *.dat
 *.pdf
